@@ -1,3 +1,160 @@
+// function check<S>(text: S extends "a" ? S : never) {}
+
+// const a = check("ab");
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type LowerCaseMap = {
+//   A: "a";
+//   B: "b";
+//   C: "c";
+//   D: "d";
+//   E: "e";
+//   F: "f";
+//   G: "g";
+//   H: "h";
+//   I: "i";
+//   J: "j";
+//   K: "k";
+//   L: "l";
+//   M: "m";
+//   N: "n";
+//   O: "o";
+//   P: "p";
+//   Q: "q";
+//   R: "r";
+//   S: "s";
+//   T: "t";
+//   U: "u";
+//   V: "v";
+//   W: "w";
+//   X: "x";
+//   Y: "y";
+//   Z: "z";
+// };
+
+// type UpperCaseMap = { [C in keyof LowerCaseMap as LowerCaseMap[C]]: C };
+
+// type LowerCaseChars = keyof UpperCaseMap;
+
+// type UpperCaseChars = keyof LowerCaseMap;
+
+// type LowerCaseChar<C extends string> = C extends UpperCaseChars
+//   ? LowerCaseMap[C]
+//   : C;
+
+// type LowerCase<S extends string> = S extends ""
+//   ? ""
+//   : S extends `${infer A}${infer B}`
+//   ? `${LowerCaseChar<A>}${LowerCase<B>}`
+//   : never;
+
+// type IsLowerCase<S extends string> = LowerCase<S> extends S ? true : false;
+
+// type UpperCaseChar<C extends string> = C extends LowerCaseChars
+//   ? UpperCaseMap[C]
+//   : C;
+
+// type UpperCase<S extends string> = S extends ""
+//   ? ""
+//   : S extends `${infer A}${infer B}`
+//   ? `${UpperCaseChar<A>}${UpperCase<B>}`
+//   : never;
+
+// type IsUpperCase<S extends string> = UpperCase<S> extends S ? true : false;
+
+// type A = LowerCase<"aB3_">;
+// type B = IsLowerCase<"aB3_">;
+// type C = UpperCase<"aB3_">;
+// type D = IsUpperCase<"AB3_">;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type LowerCaseChars =
+//   | "a"
+//   | "b"
+//   | "c"
+//   | "d"
+//   | "e"
+//   | "f"
+//   | "g"
+//   | "h"
+//   | "i"
+//   | "j"
+//   | "k"
+//   | "l"
+//   | "m"
+//   | "n"
+//   | "o"
+//   | "p"
+//   | "q"
+//   | "r"
+//   | "s"
+//   | "t"
+//   | "u"
+//   | "v"
+//   | "w"
+//   | "x"
+//   | "y"
+//   | "z";
+
+// type UpperCaseChars =
+//   | "A"
+//   | "B"
+//   | "C"
+//   | "D"
+//   | "E"
+//   | "F"
+//   | "G"
+//   | "H"
+//   | "I"
+//   | "J"
+//   | "K"
+//   | "L"
+//   | "M"
+//   | "N"
+//   | "O"
+//   | "P"
+//   | "Q"
+//   | "R"
+//   | "S"
+//   | "T"
+//   | "U"
+//   | "V"
+//   | "W"
+//   | "X"
+//   | "Y"
+//   | "Z";
+
+// type LowerCaseChar<C extends UpperCaseChars> = "";
+
+// type LowerCaseCharMap<C extends UpperCaseChars> = LowerCaseMap[C];
+
+// type LowerCaseChar<C extends string> = C extends UpperCaseChars
+//   ? LowerCaseCharMap<C>
+//   : C;
+
+// type LowerCase<S extends string> = S extends ""
+//   ? ""
+//   : S extends `${infer A}${infer B}`
+//   ? `${A extends UpperCaseChars ? LowerCaseChar<A> : A}${LowerCase<B>}`
+//   : never;
+
+// type IsLowerCase<S extends string> = S extends ""
+//   ? true
+//   : S extends `${infer A}${infer B}`
+//   ? A extends UpperCaseChars
+//     ? false
+//     : IsLowerCase<B>
+//   : never;
+
+// type IsLowerCase<S extends string> =
+//   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[number] extends S[number] ? false : true;
+
+// type A = IsLowerCase<"Abcd">;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // type Index<T> = Exclude<keyof T, keyof any[]>;
 
 // type DisjointArray<T extends readonly any[]> = Index<T> extends infer K // declare K
