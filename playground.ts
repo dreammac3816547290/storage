@@ -1,3 +1,243 @@
+// type And<A extends boolean, B extends boolean> = A extends true
+//   ? B extends true
+//     ? true
+//     : false
+//   : false;
+
+// type Or<A extends boolean, B extends boolean> = A extends true
+//   ? true
+//   : B extends true
+//   ? true
+//   : false;
+
+// type Not<A extends boolean> = A extends true ? false : true;
+
+type Reverse<S extends string> = S extends ""
+  ? ""
+  : S extends CombineSS<infer A, infer B>
+  ? CombineSS<Reverse<B>, A>
+  : never;
+
+type R = Reverse<"abcdef">;
+
+type Digits = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+type Stringify<A extends number> = `${A}`;
+type CombineNN<A extends Digits, B extends number> = `${A}${B}`;
+type CombineSS<A extends string, B extends string> = `${A}${B}`;
+type CombineNS<A extends Digits, B extends string> = `${A}${B}`;
+
+type StringToNumber<S extends string> = S extends Stringify<infer N>
+  ? N
+  : never;
+
+type W = "12345" extends CombineSS<infer A, infer B> ? B : never;
+type X = "12345" extends CombineNN<infer A, infer B> ? B : never;
+type Y = "12345" extends Stringify<infer A> ? A : never;
+type Z = StringToNumber<"12345">;
+
+type PreMap = {
+  0: never;
+  1: 0;
+  2: 1;
+  3: 2;
+  4: 3;
+  5: 4;
+  6: 5;
+  7: 6;
+  8: 7;
+  9: 8;
+};
+
+type LessEqualDigit<D extends Digits> = D extends never
+  ? never
+  : D | LessEqualDigit<PreMap[D]>;
+
+type LessDigit<D extends Digits> = LessEqualDigit<PreMap[D]>;
+
+type IsEqual<A, B> = A extends B ? (B extends A ? true : false) : false;
+
+type IsGreaterEqualStringReverse<
+  A extends string,
+  B extends string
+> = B extends ""
+  ? true
+  : A extends ""
+  ? false
+  : A extends CombineNS<infer DigitA, infer RestA>
+  ? B extends CombineNS<infer DigitB, infer RestB>
+    ? IsEqual<RestA, RestB> extends true
+      ? DigitB extends LessEqualDigit<DigitA> // check DigitB <= DigitA
+        ? true
+        : false
+      : IsGreaterStringReverse<RestA, RestB>
+    : never
+  : never;
+
+type IsGreaterEqualString<
+  A extends string,
+  B extends string
+> = IsGreaterEqualStringReverse<Reverse<A>, Reverse<B>>;
+
+type IsGreaterEqual<A extends number, B extends number> = IsGreaterEqualString<
+  Stringify<A>,
+  Stringify<B>
+>;
+
+type IsGreaterStringReverse<A extends string, B extends string> = A extends ""
+  ? false
+  : B extends ""
+  ? true
+  : A extends CombineNS<infer DigitA, infer RestA>
+  ? B extends CombineNS<infer DigitB, infer RestB>
+    ? IsEqual<RestA, RestB> extends true
+      ? DigitB extends LessDigit<DigitA> // check DigitB < DigitA
+        ? true
+        : false
+      : IsGreaterStringReverse<RestA, RestB>
+    : never
+  : never;
+
+type IsGreaterString<
+  A extends string,
+  B extends string
+> = IsGreaterStringReverse<Reverse<A>, Reverse<B>>;
+
+type IsGreater<A extends number, B extends number> = IsGreaterString<
+  Stringify<A>,
+  Stringify<B>
+>;
+
+type A = IsGreaterEqual<10, 20>;
+type B = IsGreaterEqual<10, 10>;
+type C = IsGreaterEqual<20, 10>;
+type D = IsGreater<10, 20>;
+type E = IsGreater<10, 10>;
+type F = IsGreater<20, 10>;
+
+type AddMap = {
+  0: { 0: 0; 1: 1; 2: 2; 3: 3; 4: 4; 5: 5; 6: 6; 7: 7; 8: 8; 9: 9 };
+  1: { 0: 1; 1: 2; 2: 3; 3: 4; 4: 5; 5: 6; 6: 7; 7: 8; 8: 9; 9: 10 };
+  2: { 0: 2; 1: 3; 2: 4; 3: 5; 4: 6; 5: 7; 6: 8; 7: 9; 8: 10; 9: 11 };
+  3: { 0: 3; 1: 4; 2: 5; 3: 6; 4: 7; 5: 8; 6: 9; 7: 10; 8: 11; 9: 12 };
+  4: { 0: 4; 1: 5; 2: 6; 3: 7; 4: 8; 5: 9; 6: 10; 7: 11; 8: 12; 9: 13 };
+  5: { 0: 5; 1: 6; 2: 7; 3: 8; 4: 9; 5: 10; 6: 11; 7: 12; 8: 13; 9: 14 };
+  6: { 0: 6; 1: 7; 2: 8; 3: 9; 4: 10; 5: 11; 6: 12; 7: 13; 8: 14; 9: 15 };
+  7: { 0: 7; 1: 8; 2: 9; 3: 10; 4: 11; 5: 12; 6: 13; 7: 14; 8: 15; 9: 16 };
+  8: { 0: 8; 1: 9; 2: 10; 3: 11; 4: 12; 5: 13; 6: 14; 7: 15; 8: 16; 9: 17 };
+  9: { 0: 9; 1: 10; 2: 11; 3: 12; 4: 13; 5: 14; 6: 15; 7: 16; 8: 17; 9: 18 };
+  10: { 0: 10; 1: 11; 2: 12; 3: 13; 4: 14; 5: 15; 6: 16; 7: 17; 8: 18; 9: 19 };
+};
+
+type AddStringReverse<
+  A extends string,
+  B extends string,
+  Carry extends 0 | 1 = 0
+> = A extends ""
+  ? B extends ""
+    ? Carry extends 0
+      ? ""
+      : "1"
+    : AddStringReverse<B, Stringify<Carry>>
+  : B extends ""
+  ? AddStringReverse<A, Stringify<Carry>>
+  : A extends CombineNS<infer DigitA, infer RestA>
+  ? B extends CombineNS<infer DigitB, infer RestB>
+    ? Reverse<
+        Stringify<AddMap[Carry extends 0 ? DigitA : AddMap[DigitA][1]][DigitB]>
+      > extends CombineNS<infer Digit, infer Rest>
+      ? CombineNS<
+          Digit,
+          AddStringReverse<RestA, RestB, Rest extends "" ? 0 : 1>
+        >
+      : never
+    : never
+  : never;
+
+type AddString<A extends string, B extends string> = Reverse<
+  AddStringReverse<Reverse<A>, Reverse<B>>
+>;
+
+type Add<A extends number, B extends number> = StringToNumber<
+  AddString<Stringify<A>, Stringify<B>>
+>;
+
+type A1 = Add<1589, 94321>;
+type A2 = 12 extends Add<5, infer A> ? A : never;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type EvenDigits = 0 | 2 | 4 | 6 | 8;
+
+// // type OddDigits = 1 | 3 | 5 | 7 | 9;
+
+// type Digits = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+// // type Digit<D extends Digits> = D;
+
+// // type IsEvenString<S extends string> = S extends Stringify<Digits>
+// //   ? S extends Stringify<EvenDigits>
+// //     ? true
+// //     : false
+// //   : S extends `${
+// //       //   Digit<Digits>
+// //       //   Digits
+// //       //   infer A
+// //       number // prefix consumes string 1 by 1
+// //     }${infer Rest}`
+// //   ? IsEvenString<Rest>
+// //   : false;
+
+// // type IsEven<N extends number> = IsEvenString<`${N}`>;
+
+// type IsEven<N extends number> = N extends Digits
+//   ? N extends EvenDigits
+//     ? true
+//     : false
+//   : Stringify<N> extends CombineNN<number, infer Rest>
+//   ? IsEven<Rest>
+//   : false;
+
+// type E0 = IsEven<0>;
+// type E1 = IsEven<1>;
+// type E2 = IsEven<2>;
+// type E = IsEven<12345>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type SplitLastDigit<
+//   Front extends number,
+//   LastDigit extends Digits
+// > = `${Front}${LastDigit}`;
+
+// type D = "12345" extends SplitLastDigit<infer Front, infer LastDigit>
+//   ? LastDigit
+//   : never;
+
+// type IsEvenString<S extends string> = S extends `${infer A}${infer B}`
+//   ? IsEvenString<B>
+//   : S extends `${EvenDigits}`
+//   ? true
+//   : false;
+
+// type IsEven<N extends number, A extends any[] = []> = N extends A["length"]
+//   ? true
+//   : IsEven<N, [any, ...A]> extends true
+//   ? false
+//   : true;
+
+// type E0 = IsEven<0>;
+// type E1 = IsEven<1>;
+// type E2 = IsEven<2>;
+
+// // type IsEven<N extends number, A extends any[] = []> = N extends A["length"]
+// //   ? true
+// //   : N extends [any, ...A]["length"]
+// //   ? false
+// //   : IsEven<N, [any, any, ...A]>;
+
+// type A = 37 extends infer A ? A : never; // not widened to number
+
 // function check<S>(text: S extends "a" ? S : never) {}
 
 // const a = check("ab");
