@@ -26,6 +26,10 @@ type Stringify<A extends number> = `${A}`;
 type CombineNN<A extends Digits, B extends number> = `${A}${B}`;
 type CombineSS<A extends string, B extends string> = `${A}${B}`;
 type CombineNS<A extends Digits, B extends string> = `${A}${B}`;
+type Negative<A extends string> = `-${A}`;
+type Inverse<A extends string> = A extends Negative<infer PosA>
+  ? PosA
+  : Negative<A>;
 
 type StringToNumber<S extends string> = S extends Stringify<infer N>
   ? N
@@ -57,7 +61,7 @@ type LessDigit<D extends Digits> = LessEqualDigit<PreMap[D]>;
 
 type IsEqual<A, B> = A extends B ? (B extends A ? true : false) : false;
 
-type IsGreaterEqualStringReverse<
+type IsGreaterEqualPositiveStringReverse<
   A extends string,
   B extends string
 > = B extends ""
@@ -70,21 +74,24 @@ type IsGreaterEqualStringReverse<
       ? DigitB extends LessEqualDigit<DigitA> // check DigitB <= DigitA
         ? true
         : false
-      : IsGreaterStringReverse<RestA, RestB>
+      : IsGreaterPositiveStringReverse<RestA, RestB>
     : never
   : never;
 
-type IsGreaterEqualString<
+type IsGreaterEqualPositiveString<
   A extends string,
   B extends string
-> = IsGreaterEqualStringReverse<Reverse<A>, Reverse<B>>;
+> = IsGreaterEqualPositiveStringReverse<Reverse<A>, Reverse<B>>;
 
-type IsGreaterEqual<A extends number, B extends number> = IsGreaterEqualString<
-  Stringify<A>,
-  Stringify<B>
->;
+type IsGreaterEqualPositive<
+  A extends number,
+  B extends number
+> = IsGreaterEqualPositiveString<Stringify<A>, Stringify<B>>;
 
-type IsGreaterStringReverse<A extends string, B extends string> = A extends ""
+type IsGreaterPositiveStringReverse<
+  A extends string,
+  B extends string
+> = A extends ""
   ? false
   : B extends ""
   ? true
@@ -94,26 +101,26 @@ type IsGreaterStringReverse<A extends string, B extends string> = A extends ""
       ? DigitB extends LessDigit<DigitA> // check DigitB < DigitA
         ? true
         : false
-      : IsGreaterStringReverse<RestA, RestB>
+      : IsGreaterPositiveStringReverse<RestA, RestB>
     : never
   : never;
 
-type IsGreaterString<
+type IsGreaterPositiveString<
   A extends string,
   B extends string
-> = IsGreaterStringReverse<Reverse<A>, Reverse<B>>;
+> = IsGreaterPositiveStringReverse<Reverse<A>, Reverse<B>>;
 
-type IsGreater<A extends number, B extends number> = IsGreaterString<
-  Stringify<A>,
-  Stringify<B>
->;
+type IsGreaterPositive<
+  A extends number,
+  B extends number
+> = IsGreaterPositiveString<Stringify<A>, Stringify<B>>;
 
-type A = IsGreaterEqual<10, 20>;
-type B = IsGreaterEqual<10, 10>;
-type C = IsGreaterEqual<20, 10>;
-type D = IsGreater<10, 20>;
-type E = IsGreater<10, 10>;
-type F = IsGreater<20, 10>;
+type A = IsGreaterEqualPositive<10, 20>;
+type B = IsGreaterEqualPositive<10, 10>;
+type C = IsGreaterEqualPositive<20, 10>;
+type D = IsGreaterPositive<10, 20>;
+type E = IsGreaterPositive<10, 10>;
+type F = IsGreaterPositive<20, 10>;
 
 type AddMap = {
   0: { 0: 0; 1: 1; 2: 2; 3: 3; 4: 4; 5: 5; 6: 6; 7: 7; 8: 8; 9: 9 };
@@ -129,7 +136,7 @@ type AddMap = {
   10: { 0: 10; 1: 11; 2: 12; 3: 13; 4: 14; 5: 15; 6: 16; 7: 17; 8: 18; 9: 19 };
 };
 
-type AddStringReverse<
+type AddPositiveStringReverse<
   A extends string,
   B extends string,
   Carry extends 0 | 1 = 0
@@ -138,9 +145,9 @@ type AddStringReverse<
     ? Carry extends 0
       ? ""
       : "1"
-    : AddStringReverse<B, Stringify<Carry>>
+    : AddPositiveStringReverse<B, Stringify<Carry>>
   : B extends ""
-  ? AddStringReverse<A, Stringify<Carry>>
+  ? AddPositiveStringReverse<A, Stringify<Carry>>
   : A extends CombineNS<infer DigitA, infer RestA>
   ? B extends CombineNS<infer DigitB, infer RestB>
     ? Reverse<
@@ -148,22 +155,22 @@ type AddStringReverse<
       > extends CombineNS<infer Digit, infer Rest>
       ? CombineNS<
           Digit,
-          AddStringReverse<RestA, RestB, Rest extends "" ? 0 : 1>
+          AddPositiveStringReverse<RestA, RestB, Rest extends "" ? 0 : 1>
         >
       : never
     : never
   : never;
 
-type AddString<A extends string, B extends string> = Reverse<
-  AddStringReverse<Reverse<A>, Reverse<B>>
+type AddPositiveString<A extends string, B extends string> = Reverse<
+  AddPositiveStringReverse<Reverse<A>, Reverse<B>>
 >;
 
-type Add<A extends number, B extends number> = StringToNumber<
-  AddString<Stringify<A>, Stringify<B>>
+type AddPositive<A extends number, B extends number> = StringToNumber<
+  AddPositiveString<Stringify<A>, Stringify<B>>
 >;
 
-type A1 = Add<1589, 94321>;
-type A2 = 12 extends Add<5, infer A> ? A : never;
+type A1 = AddPositive<1589, 94321>;
+type A2 = 12 extends AddPositive<5, infer A> ? A : never;
 
 type MultiplyMap = {
   0: { 0: 0; 1: 0; 2: 0; 3: 0; 4: 0; 5: 0; 6: 0; 7: 0; 8: 0; 9: 0 };
@@ -192,29 +199,80 @@ type MultiplyMap = {
 //     >
 //   : never;
 
-type MultiplyStringReverse<
+type MultiplyPositiveStringReverse<
   A extends string,
   B extends string
 > = A extends Stringify<Digits>
   ? B extends Stringify<Digits>
     ? Reverse<Stringify<MultiplyMap[StringToNumber<A>][StringToNumber<B>]>>
-    : MultiplyStringReverse<B, A>
+    : MultiplyPositiveStringReverse<B, A>
   : A extends CombineSS<infer DigitCharA, infer RestA>
-  ? AddStringReverse<
-      MultiplyStringReverse<DigitCharA, B>,
-      CombineNS<0, MultiplyStringReverse<RestA, B>>
+  ? AddPositiveStringReverse<
+      MultiplyPositiveStringReverse<DigitCharA, B>,
+      CombineNS<0, MultiplyPositiveStringReverse<RestA, B>>
     >
   : never;
 
-type MultiplyString<A extends string, B extends string> = Reverse<
-  MultiplyStringReverse<Reverse<A>, Reverse<B>>
->;
+type MultiplyString<A extends string, B extends string> = A extends Negative<
+  infer PosA
+>
+  ? Inverse<MultiplyString<PosA, B>>
+  : B extends Negative<infer PosB>
+  ? Inverse<MultiplyString<A, PosB>>
+  : Reverse<MultiplyPositiveStringReverse<Reverse<A>, Reverse<B>>>;
 
 type Multiply<A extends number, B extends number> = StringToNumber<
   MultiplyString<Stringify<A>, Stringify<B>>
 >;
 
-type M1 = Multiply<12345, 37>;
+type M1 = Multiply<12345, -37>;
+
+type KeyOf<Obj, Value> = {
+  [K in keyof Obj & Digits]: Obj[K] extends Value ? K : never;
+}[keyof Obj & Digits];
+
+type RemoveZero<S extends string> = S extends "0" ? "" : S;
+
+type SubtractPositiveStringReverse<
+  A extends string,
+  B extends string
+> = IsEqual<A, B> extends true
+  ? "0"
+  : B extends ""
+  ? A
+  : A extends CombineNS<infer DigitA, infer RestA>
+  ? B extends CombineNS<infer DigitB, infer RestB>
+    ? DigitB extends LessEqualDigit<DigitA> // DigitA >= DigitB
+      ? CombineNS<
+          KeyOf<AddMap[DigitB], DigitA>, // find DigitC such that AddMap[DigitB][DigitC] extends DigitA
+          RemoveZero<SubtractPositiveStringReverse<RestA, RestB>>
+        >
+      : CombineNS<
+          KeyOf<AddMap[DigitB], StringToNumber<CombineNN<1, DigitA>>>,
+          RemoveZero<
+            SubtractPositiveStringReverse<
+              SubtractPositiveStringReverse<RestA, "1">,
+              RestB
+            >
+          >
+        >
+    : never
+  : never;
+
+// : IsGreaterEqualPositiveStringReverse<A, B> extends true
+// ? SubtractPositiveStringReverse<B, A>
+// assume A >= B
+
+type SubtractPositiveString<A extends string, B extends string> = Reverse<
+  SubtractPositiveStringReverse<Reverse<A>, Reverse<B>>
+>;
+
+type SubtractPositive<A extends number, B extends number> = StringToNumber<
+  SubtractPositiveString<Stringify<A>, Stringify<B>>
+>;
+
+type S1 = SubtractPositive<12345, 9999>;
+type S2 = SubtractPositive<9182, 1928>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
