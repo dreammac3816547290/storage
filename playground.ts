@@ -668,6 +668,41 @@ type AF5 = AddFloat<-567, -1234>;
 type AF6 = AddFloat<-99.7, -102.3>;
 type AF7 = AddFloat<-99.745, -102.39>;
 
+type MultiplyFloatString<
+  A extends string,
+  B extends string
+> = IsDecimalString<A> extends true
+  ? IsDecimalString<B> extends true // A decimal
+    ? A extends Dot<infer IntA, infer FracA> // AB decimal
+      ? B extends Dot<infer IntB, infer FracB>
+        ? DecimalString<
+            MultiplyString<CombineSS<IntA, FracA>, CombineSS<IntB, FracB>>,
+            AddPositive<Length<FracA>, Length<FracB>>
+          >
+        : never
+      : never
+    : MultiplyFloatString<B, A> // A decimal B integer
+  : IsDecimalString<B> extends true // A integer
+  ? B extends Dot<infer IntB, infer FracB> // A integer B decimal
+    ? DecimalString<MultiplyString<A, CombineSS<IntB, FracB>>, Length<FracB>>
+    : never
+  : MultiplyString<A, B>; // AB integer
+
+type MultiplyFloat<A extends number, B extends number> = StringToNumber<
+  MultiplyFloatString<Stringify<A>, Stringify<B>>
+>;
+
+type MF1 = MultiplyFloat<12.34, 978>;
+type MF2 = MultiplyFloat<-12.34, 156>;
+type MF3 = MultiplyFloat<1.234, -100.5678>;
+type MF4 = MultiplyFloat<567, 1234>;
+type MF5 = MultiplyFloat<-567, -1234>;
+type MF6 = MultiplyFloat<-99.7, -102.3>;
+type MF7 = MultiplyFloat<-99.745, -102.39>;
+type MF8 = MultiplyFloat<0.0105, 0.00123>;
+type MF9 = MultiplyFloat<125005, 0.1000123>;
+type MF10 = MultiplyFloat<120, 0.000135>;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // type EvenDigits = 0 | 2 | 4 | 6 | 8;
