@@ -27,10 +27,12 @@ type CombineNN<A extends Digits, B extends number> = `${A}${B}`;
 type CombineSS<A extends string, B extends string> = `${A}${B}`;
 type CombineNS<A extends Digits, B extends string> = `${A}${B}`;
 type Negative<A extends string> = `-${A}`;
+type Positive<A extends string> = A extends Negative<infer PosA> ? never : A;
 type Inverse<A extends string> = A extends Negative<infer PosA>
   ? PosA
   : Negative<A>;
 type Abs<A extends string> = A extends Negative<infer PosA> ? PosA : A;
+type Pair<A extends string, B extends string> = [A, B];
 
 type StringToNumber<S extends string> = S extends Stringify<infer N>
   ? N
@@ -210,7 +212,7 @@ type MultiplyPositiveStringReverse<
   : A extends CombineSS<infer DigitCharA, infer RestA>
   ? AddPositiveStringReverse<
       MultiplyPositiveStringReverse<DigitCharA, B>,
-      CombineNS<0, MultiplyPositiveStringReverse<RestA, B>>
+      CombineNS<0, RemoveZero<MultiplyPositiveStringReverse<RestA, B>>>
     >
   : never;
 
@@ -279,14 +281,17 @@ type AddString<A extends string, B extends string> = A extends Negative<
   infer PosA
 >
   ? B extends Negative<infer PosB>
-    ? Inverse<AddPositiveString<PosA, PosB>> // AB neg
+    ? // Inverse
+      Negative<AddPositiveString<PosA, PosB>> // AB neg
     : IsGreaterPositiveString<PosA, B> extends true // A neg B pos
-    ? Inverse<SubtractPositiveString<PosA, B>> // abs A > abs B
+    ? // Inverse
+      Negative<SubtractPositiveString<PosA, B>> // abs A > abs B
     : SubtractPositiveString<B, PosA> // abs A <= abs B
   : B extends Negative<infer PosB>
   ? IsGreaterPositiveString<A, PosB> extends true // A pos B neg
     ? SubtractPositiveString<A, PosB> // abs A > abs B
-    : Inverse<SubtractPositiveString<PosB, A>> // abs A <= abs B
+    : // Inverse
+      Negative<SubtractPositiveString<PosB, A>> // abs A <= abs B
   : AddPositiveString<A, B>; // AB pos
 
 type Add<A extends number, B extends number> = StringToNumber<
@@ -312,6 +317,208 @@ type SS2 = Subtract<90, 120>;
 type SS3 = Subtract<123, 77>;
 type SS4 = Subtract<-37, -60>;
 type SS5 = Subtract<-60, -37>;
+type SS6 = Subtract<10 | -3, -7 | 20>;
+
+// type MaxString<A extends string, B = A> = B extends A
+//   ? IsGreaterEqualPositiveString<B, Exclude<A, B>> extends true
+//     ? B
+//     : never
+//   : never;
+
+type MaxString<A extends string, B = A> = B extends A
+  ? SubtractString<B, Exclude<A, B>> extends Positive<infer _> // all b - a pair non-negative
+    ? B
+    : never
+  : never;
+
+type Max<A extends number> = StringToNumber<MaxString<Stringify<A>>>;
+
+type M = Max<10 | 5 | -25 | 99 | -100>;
+
+type MaxDigitDiv<A extends string, B extends string, C = Digits> = Max<
+  C extends Digits
+    ? IsGreaterEqualPositiveString<
+        A,
+        MultiplyString<B, Stringify<C>>
+      > extends true
+      ? C
+      : never
+    : never
+> &
+  Digits;
+
+type MaxDigitDivReverse<A extends string, B extends string, C = Digits> = Max<
+  C extends Digits
+    ? IsGreaterEqualPositiveStringReverse<
+        A,
+        MultiplyPositiveStringReverse<B, Stringify<C>>
+      > extends true
+      ? C
+      : never
+    : never
+> &
+  Digits;
+
+type MDD1 = MaxDigitDiv<"9", "3">;
+type MDD2 = MaxDigitDiv<"5", "32">;
+
+type T1 = MultiplyString<"32", "0">;
+type T2 = IsGreaterEqualPositiveString<"5", T1>;
+
+// type FloorDivString<A extends string, B extends string> = A extends Negative<
+//   infer PosA
+// >
+//   ? MultiplyString<FloorDivString<PosA, B>, B> extends PosA // a neg
+//     ? Negative<FloorDivString<PosA, B>> // if (posA // B) * B === posA
+//     : Negative<AddPositiveString<FloorDivString<PosA, B>, "1">> // - (posA // B + 1)
+//   : IsGreaterEqualPositiveString<A, B> extends true // a pos
+//   ? IsGreaterEqualPositiveString<A, CombineSS<B, "0">> extends true // a >= b
+//     ? never // a >= 10b
+//     : Stringify<MaxDigitDiv<A, B>> // b <= a < 10b thus 1 <= a // b <= 9
+//   : "0"; // a < b
+
+// type FloorDivString<A extends string, B extends string> = A extends Negative<
+//   infer PosA
+// >
+//   ? MultiplyString<FloorDivString<PosA, B>, B> extends PosA // a neg
+//     ? Negative<FloorDivString<PosA, B>> // if (posA // B) * B === posA
+//     : Negative<AddPositiveString<FloorDivString<PosA, B>, "1">> // - (posA // B + 1)
+//   : IsGreaterEqualPositiveString<A, CombineSS<B, "0">> extends true // a pos
+//   ? never // a >= 10b
+//   : Stringify<MaxDigitDiv<A, B>>; // a < 10b thus a // b <= 9
+
+// type FloorDivModString<A extends string, B extends string> = A extends Negative<
+//   infer PosA
+// >
+//   ? ["0", "0"] // a neg
+//   : IsGreaterEqualPositiveString<A, CombineSS<B, "0">> extends true // a pos
+//   ? Reverse<A> extends CombineNS<infer DigitA, Reverse<infer RestA>> // a >= 10b
+//     ? ["0", "0"]
+//     : never
+//   : [
+//       Stringify<MaxDigitDiv<A, B>>,
+//       SubtractPositiveString<A, MultiplyString<B, Stringify<MaxDigitDiv<A, B>>>>
+//     ]; // a < 10b thus a // b <= 9;
+
+type FloorDivModStringReverse<
+  A extends string,
+  B extends string
+> = IsGreaterEqualPositiveStringReverse<A, CombineSS<"0", B>> extends true
+  ? A extends CombineNS<infer DigitA, infer RestA> // a >= 10b
+    ? FloorDivModStringReverse<RestA, B> extends Pair<
+        infer PrevDiv,
+        infer PrevMod
+      >
+      ? FloorDivModStringReverse<CombineNS<DigitA, PrevMod>, B> extends Pair<
+          // (prevmod * 10 + digit) //% b
+          infer NextDiv, // <= 9
+          infer NextMod
+        >
+        ? [CombineSS<NextDiv, PrevDiv>, NextMod] // div = prevdiv * 10 + nextdiv, mod = nextmod
+        : never
+      : never
+    : never
+  : [
+      Stringify<MaxDigitDivReverse<A, B>>,
+      SubtractPositiveStringReverse<
+        A,
+        MultiplyPositiveStringReverse<B, Stringify<MaxDigitDivReverse<A, B>>>
+      >
+    ]; // a < 10b thus a // b <= 9;
+
+type FloorDivModString<A extends string, B extends string> = A extends Negative<
+  infer PosA
+>
+  ? FloorDivModStringReverse<Reverse<PosA>, Reverse<B>> extends Pair<
+      infer RevDiv, // positive & reverse
+      infer RevMod // positive & reverse
+    >
+    ? RevMod extends "0"
+      ? Pair<
+          Negative<Reverse<RevDiv>>, // - div
+          "0"
+        >
+      : Pair<
+          Negative<Reverse<AddPositiveStringReverse<RevDiv, "1">>>, // - (div + 1)
+          SubtractPositiveString<B, Reverse<RevMod>> // b - mod
+        >
+    : never
+  : FloorDivModStringReverse<Reverse<A>, Reverse<B>> extends Pair<
+      infer RevDiv,
+      infer RefMod
+    >
+  ? Pair<Reverse<RevDiv>, Reverse<RefMod>>
+  : never;
+
+type FloorDivMod<A extends number, B extends number> = FloorDivModString<
+  Stringify<A>,
+  Stringify<B>
+> extends Pair<infer Div, infer Mod>
+  ? [StringToNumber<Div>, StringToNumber<Mod>]
+  : never;
+
+type FF1 = FloorDivMod<32, 7>;
+type FF2 = FloorDivMod<729, 27>;
+type FF3 = FloorDivMod<-32, 7>;
+type FF4 = FloorDivMod<-729, 27>;
+type FF5 = FloorDivMod<5, 32>;
+type FF6 = FloorDivMod<-5, 32>;
+type FF7 = FloorDivMod<-12345, 98>;
+type FF8 = FloorDivMod<67945, 107>;
+
+type FloorDivString<A extends string, B extends string> = FloorDivModString<
+  A,
+  B
+>[0];
+// FloorDivModString<
+//   A,
+//   B
+// > extends Pair<infer Div, infer Mod>
+//   ? Div
+//   : never;
+
+type FloorDiv<A extends number, B extends number> = StringToNumber<
+  FloorDivString<Stringify<A>, Stringify<B>>
+>;
+
+type F1 = FloorDiv<32, 7>;
+type F2 = FloorDiv<729, 27>;
+type F3 = FloorDiv<-32, 7>;
+type F4 = FloorDiv<-729, 27>;
+type F5 = FloorDiv<5, 32>;
+type F6 = FloorDiv<-5, 32>;
+type F7 = FloorDiv<-12345, 98>;
+type F8 = FloorDiv<67945, 107>;
+
+// type ModuloString<A extends string, B extends string> = A extends Negative<
+//   infer PosA
+// >
+//   ? ModuloString<SubtractString<B, ModuloString<PosA, B>>, B> // (b - (-a % b)) % b
+//   : never;
+
+type ModuloString<A extends string, B extends string> = FloorDivModString<
+  A,
+  B
+>[1];
+// FloorDivModString<
+//   A,
+//   B
+// > extends Pair<infer Div, infer Mod>
+//   ? Mod
+//   : never;
+
+type Modulo<A extends number, B extends number> = StringToNumber<
+  ModuloString<Stringify<A>, Stringify<B>>
+>;
+
+type MM1 = Modulo<32, 7>;
+type MM2 = Modulo<729, 27>;
+type MM3 = Modulo<-32, 7>;
+type MM4 = Modulo<-729, 27>;
+type MM5 = Modulo<5, 32>;
+type MM6 = Modulo<-5, 32>;
+type MM7 = Modulo<-12345, 98>;
+type MM8 = Modulo<67945, 107>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
