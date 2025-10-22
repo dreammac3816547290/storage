@@ -1,16 +1,16 @@
-// type And<A extends boolean, B extends boolean> = A extends true
-//   ? B extends true
-//     ? true
-//     : false
-//   : false;
+type And<A extends boolean, B extends boolean> = A extends true
+  ? B extends true
+    ? true
+    : false
+  : false;
 
-// type Or<A extends boolean, B extends boolean> = A extends true
-//   ? true
-//   : B extends true
-//   ? true
-//   : false;
+type Or<A extends boolean, B extends boolean> = A extends true
+  ? true
+  : B extends true
+  ? true
+  : false;
 
-// type Not<A extends boolean> = A extends true ? false : true;
+type Not<A extends boolean> = A extends true ? false : true;
 
 type Reverse<S extends string> = S extends ""
   ? ""
@@ -533,6 +533,7 @@ type MM7 = Modulo<-12345, 98>;
 type MM8 = Modulo<67945, 107>;
 
 type Dot<A extends string, B extends string> = `${A}.${B}`;
+// B extends "" ? `${A}` : `${A}.${B}`; // break type inference
 
 type Length<A extends string> = A extends ""
   ? 0
@@ -548,21 +549,27 @@ type Length<A extends string> = A extends ""
 //   ? CombineSS<A, PadZero<B, Subtract<L, 1>>>
 //   : never;
 
-type Repeat<
-  S extends string,
-  Count extends number
-> = Stringify<Count> extends Negative<infer A>
+type Repeat<S extends string, Count extends number> = Count extends 0
+  ? ""
+  : Stringify<Count> extends Negative<infer A>
   ? ""
   : CombineSS<S, Repeat<S, Subtract<Count, 1>>>;
 
-type PadZero<
-  S extends string,
-  Count extends number
-> = Stringify<Count> extends Negative<infer A>
+type PadZero<S extends string, Count extends number> = Count extends 0
+  ? S
+  : Stringify<Count> extends Negative<infer A>
   ? S
   : IsGreaterPositive<Count, Length<S>> extends true // Count > Length<S>
   ? CombineSS<S, Repeat<"0", Subtract<Count, Length<S>>>>
   : S;
+
+type HasChar<S extends string, C extends string> = S extends ""
+  ? false
+  : S extends CombineSS<infer A, infer Rest>
+  ? Or<A extends C ? true : false, HasChar<Rest, C>>
+  : never;
+
+type IsDecimalString<S extends string> = HasChar<S, ".">;
 
 type ShiftRightStringReverse<
   LeftReverse extends string,
@@ -580,24 +587,86 @@ type ShiftRightStringReverse<
     >
   : never;
 
-type DecimalString<Int extends number, Count extends number> = Reverse<
-  ShiftRightStringReverse<Reverse<Stringify<Int>>, "", Count>
->;
-
 type RemoveDecimalZeros<S extends string> = Reverse<
   RemoveLeadZeros<Reverse<S>>
 >;
 
-type D1 = StringToNumber<RemoveDecimalZeros<DecimalString<1234567890, 5>>>;
-type D2 = StringToNumber<RemoveDecimalZeros<DecimalString<1000000, 5>>>;
-type D3 = StringToNumber<RemoveDecimalZeros<DecimalString<19, 5>>>;
+type DecimalString<S extends string, Count extends number> = Reverse<
+  RemoveLeadZeros<ShiftRightStringReverse<Reverse<S>, "", Count>>
+>;
+
+type Decimal<Int extends number, Count extends number> = StringToNumber<
+  DecimalString<Stringify<Int>, Count>
+>;
+
+type D1 = Decimal<1234567890, 5>;
+type D2 = Decimal<1000000, 5>;
+type D3 = Decimal<19, 5>;
 type D4 = Length<"12345.678" extends Dot<infer A, infer B> ? B : never>;
 
 type P1 = PadZero<"123", 2>;
 type P2 = PadZero<"123", 7>;
+type P3 = PadZero<"123", -10>;
+type P4 = PadZero<"98765", 10>;
+
+type H1 = HasChar<"123", ".">;
+type H2 = HasChar<"12.3", ".">;
+type H3 = HasChar<"...", ".">;
+
+type ID1 = IsDecimalString<"12.3">;
+type ID2 = IsDecimalString<"12345">;
 
 type N1 = "0" extends Negative<infer A> ? A : never;
 type N2 = Negative<"0">; // contradiction
+
+type AddFloatString<
+  A extends string,
+  B extends string
+> = IsDecimalString<A> extends true
+  ? IsDecimalString<B> extends true // A decimal
+    ? A extends Dot<infer IntA, infer FracA> // AB decimal
+      ? B extends Dot<infer IntB, infer FracB>
+        ? IsGreaterEqualPositive<Length<FracA>, Length<FracB>> extends true
+          ? DecimalString<
+              AddString<
+                CombineSS<IntA, FracA>,
+                CombineSS<
+                  IntB,
+                  CombineSS<
+                    FracB,
+                    Repeat<"0", Subtract<Length<FracA>, Length<FracB>>>
+                  >
+                >
+              >,
+              Length<FracA>
+            > // length FracA >= length FracB
+          : AddFloatString<B, A> // length FracA < length FracB
+        : never
+      : never
+    : AddFloatString<B, A> // A decimal B integer
+  : IsDecimalString<B> extends true // A integer
+  ? B extends Dot<infer IntB, infer FracB> // A integer B decimal
+    ? DecimalString<
+        AddString<
+          CombineSS<A, Repeat<"0", Length<FracB>>>,
+          CombineSS<IntB, FracB>
+        >,
+        Length<FracB>
+      >
+    : never
+  : AddString<A, B>; // AB integer
+
+type AddFloat<A extends number, B extends number> = StringToNumber<
+  AddFloatString<Stringify<A>, Stringify<B>>
+>;
+
+type AF1 = AddFloat<12.34, 978>;
+type AF2 = AddFloat<-12.34, 156>;
+type AF3 = AddFloat<1.234, -100.5678>;
+type AF4 = AddFloat<567, 1234>;
+type AF5 = AddFloat<-567, -1234>;
+type AF6 = AddFloat<-99.7, -102.3>;
+type AF7 = AddFloat<-99.745, -102.39>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
