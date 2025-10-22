@@ -26,8 +26,12 @@ type Stringify<A extends number> = `${A}`;
 type CombineNN<A extends Digits, B extends number> = `${A}${B}`;
 type CombineSS<A extends string, B extends string> = `${A}${B}`;
 type CombineNS<A extends Digits, B extends string> = `${A}${B}`;
-type Negative<A extends string> = `-${A}`;
-type Positive<A extends string> = A extends Negative<infer PosA> ? never : A;
+type Negative<A extends string> = A extends "0" ? "0" : `-${A}`; // prevent -0
+type Positive<A extends string> = A extends "0"
+  ? "0"
+  : A extends Negative<infer PosA>
+  ? never
+  : A;
 type Inverse<A extends string> = A extends Negative<infer PosA>
   ? PosA
   : Negative<A>;
@@ -235,6 +239,11 @@ type KeyOf<Obj, Value> = {
 }[keyof Obj & Digits];
 
 type RemoveZero<S extends string> = S extends "0" ? "" : S;
+type RemoveLeadZeros<S extends string> = S extends CombineSS<".", infer SS>
+  ? SS // stop at dot
+  : S extends CombineNS<0, infer SS>
+  ? RemoveLeadZeros<SS>
+  : S; // stop if not zero
 
 type SubtractPositiveStringReverse<
   A extends string,
@@ -318,6 +327,9 @@ type SS3 = Subtract<123, 77>;
 type SS4 = Subtract<-37, -60>;
 type SS5 = Subtract<-60, -37>;
 type SS6 = Subtract<10 | -3, -7 | 20>;
+type SS7 = Subtract<0, 0>;
+type SS8 = Subtract<100, 100>;
+type SS9 = Subtract<-100, -100>;
 
 // type MaxString<A extends string, B = A> = B extends A
 //   ? IsGreaterEqualPositiveString<B, Exclude<A, B>> extends true
@@ -519,6 +531,73 @@ type MM5 = Modulo<5, 32>;
 type MM6 = Modulo<-5, 32>;
 type MM7 = Modulo<-12345, 98>;
 type MM8 = Modulo<67945, 107>;
+
+type Dot<A extends string, B extends string> = `${A}.${B}`;
+
+type Length<A extends string> = A extends ""
+  ? 0
+  : A extends CombineSS<infer S, infer Rest>
+  ? AddPositive<Length<Rest>, 1>
+  : never;
+
+// type PadZero<S extends string, L extends number> = L extends 0
+//   ? S
+//   : S extends ""
+//   ? PadZero<"0", Subtract<L, 1>>
+//   : S extends CombineSS<infer A, infer B>
+//   ? CombineSS<A, PadZero<B, Subtract<L, 1>>>
+//   : never;
+
+type Repeat<
+  S extends string,
+  Count extends number
+> = Stringify<Count> extends Negative<infer A>
+  ? ""
+  : CombineSS<S, Repeat<S, Subtract<Count, 1>>>;
+
+type PadZero<
+  S extends string,
+  Count extends number
+> = Stringify<Count> extends Negative<infer A>
+  ? S
+  : IsGreaterPositive<Count, Length<S>> extends true // Count > Length<S>
+  ? CombineSS<S, Repeat<"0", Subtract<Count, Length<S>>>>
+  : S;
+
+type ShiftRightStringReverse<
+  LeftReverse extends string,
+  RightReverse extends string,
+  Count extends number,
+  I extends number = 0
+> = Count extends I
+  ? Dot<RightReverse, LeftReverse>
+  : LeftReverse extends CombineSS<infer LeftDigitString, infer LeftRestRev>
+  ? ShiftRightStringReverse<
+      LeftRestRev extends "" ? "0" : LeftRestRev,
+      CombineSS<RightReverse, LeftDigitString>,
+      Count,
+      AddPositive<I, 1>
+    >
+  : never;
+
+type DecimalString<Int extends number, Count extends number> = Reverse<
+  ShiftRightStringReverse<Reverse<Stringify<Int>>, "", Count>
+>;
+
+type RemoveDecimalZeros<S extends string> = Reverse<
+  RemoveLeadZeros<Reverse<S>>
+>;
+
+type D1 = StringToNumber<RemoveDecimalZeros<DecimalString<1234567890, 5>>>;
+type D2 = StringToNumber<RemoveDecimalZeros<DecimalString<1000000, 5>>>;
+type D3 = StringToNumber<RemoveDecimalZeros<DecimalString<19, 5>>>;
+type D4 = Length<"12345.678" extends Dot<infer A, infer B> ? B : never>;
+
+type P1 = PadZero<"123", 2>;
+type P2 = PadZero<"123", 7>;
+
+type N1 = "0" extends Negative<infer A> ? A : never;
+type N2 = Negative<"0">; // contradiction
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
