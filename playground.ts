@@ -165,6 +165,57 @@ type Add<A extends number, B extends number> = StringToNumber<
 type A1 = Add<1589, 94321>;
 type A2 = 12 extends Add<5, infer A> ? A : never;
 
+type MultiplyMap = {
+  0: { 0: 0; 1: 0; 2: 0; 3: 0; 4: 0; 5: 0; 6: 0; 7: 0; 8: 0; 9: 0 };
+  1: { 0: 0; 1: 1; 2: 2; 3: 3; 4: 4; 5: 5; 6: 6; 7: 7; 8: 8; 9: 9 };
+  2: { 0: 0; 1: 2; 2: 4; 3: 6; 4: 8; 5: 10; 6: 12; 7: 14; 8: 16; 9: 18 };
+  3: { 0: 0; 1: 3; 2: 6; 3: 9; 4: 12; 5: 15; 6: 18; 7: 21; 8: 24; 9: 27 };
+  4: { 0: 0; 1: 4; 2: 8; 3: 12; 4: 16; 5: 20; 6: 24; 7: 28; 8: 32; 9: 36 };
+  5: { 0: 0; 1: 5; 2: 10; 3: 15; 4: 20; 5: 25; 6: 30; 7: 35; 8: 40; 9: 45 };
+  6: { 0: 0; 1: 6; 2: 12; 3: 18; 4: 24; 5: 30; 6: 36; 7: 42; 8: 48; 9: 54 };
+  7: { 0: 0; 1: 7; 2: 14; 3: 21; 4: 28; 5: 35; 6: 42; 7: 49; 8: 56; 9: 63 };
+  8: { 0: 0; 1: 8; 2: 16; 3: 24; 4: 32; 5: 40; 6: 48; 7: 56; 8: 64; 9: 72 };
+  9: { 0: 0; 1: 9; 2: 18; 3: 27; 4: 36; 5: 45; 6: 54; 7: 63; 8: 72; 9: 81 };
+};
+
+// type MultiplyStringReverse<
+//   A extends string,
+//   B extends string
+// > = A extends Stringify<Digits & infer DigitA>
+//   ? B extends Stringify<Digits & infer DigitB>
+//     ? Reverse<Stringify<MultiplyMap[DigitA][DigitB]>>
+//     : MultiplyStringReverse<B, A>
+//   : A extends CombineSS<infer DigitCharA, infer RestA>
+//   ? AddStringReverse<
+//       MultiplyStringReverse<DigitCharA, B>,
+//       CombineNS<0, MultiplyStringReverse<RestA, B>>
+//     >
+//   : never;
+
+type MultiplyStringReverse<
+  A extends string,
+  B extends string
+> = A extends Stringify<Digits>
+  ? B extends Stringify<Digits>
+    ? Reverse<Stringify<MultiplyMap[StringToNumber<A>][StringToNumber<B>]>>
+    : MultiplyStringReverse<B, A>
+  : A extends CombineSS<infer DigitCharA, infer RestA>
+  ? AddStringReverse<
+      MultiplyStringReverse<DigitCharA, B>,
+      CombineNS<0, MultiplyStringReverse<RestA, B>>
+    >
+  : never;
+
+type MultiplyString<A extends string, B extends string> = Reverse<
+  MultiplyStringReverse<Reverse<A>, Reverse<B>>
+>;
+
+type Multiply<A extends number, B extends number> = StringToNumber<
+  MultiplyString<Stringify<A>, Stringify<B>>
+>;
+
+type M1 = Multiply<12345, 37>;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // type EvenDigits = 0 | 2 | 4 | 6 | 8;
