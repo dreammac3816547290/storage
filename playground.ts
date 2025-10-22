@@ -30,6 +30,7 @@ type Negative<A extends string> = `-${A}`;
 type Inverse<A extends string> = A extends Negative<infer PosA>
   ? PosA
   : Negative<A>;
+type Abs<A extends string> = A extends Negative<infer PosA> ? PosA : A;
 
 type StringToNumber<S extends string> = S extends Stringify<infer N>
   ? N
@@ -273,6 +274,44 @@ type SubtractPositive<A extends number, B extends number> = StringToNumber<
 
 type S1 = SubtractPositive<12345, 9999>;
 type S2 = SubtractPositive<9182, 1928>;
+
+type AddString<A extends string, B extends string> = A extends Negative<
+  infer PosA
+>
+  ? B extends Negative<infer PosB>
+    ? Inverse<AddPositiveString<PosA, PosB>> // AB neg
+    : IsGreaterPositiveString<PosA, B> extends true // A neg B pos
+    ? Inverse<SubtractPositiveString<PosA, B>> // abs A > abs B
+    : SubtractPositiveString<B, PosA> // abs A <= abs B
+  : B extends Negative<infer PosB>
+  ? IsGreaterPositiveString<A, PosB> extends true // A pos B neg
+    ? SubtractPositiveString<A, PosB> // abs A > abs B
+    : Inverse<SubtractPositiveString<PosB, A>> // abs A <= abs B
+  : AddPositiveString<A, B>; // AB pos
+
+type Add<A extends number, B extends number> = StringToNumber<
+  AddString<Stringify<A>, Stringify<B>>
+>;
+
+type AA1 = Add<123, 67>;
+type AA2 = Add<20, -37>;
+type AA3 = Add<-37, 20>;
+type AA4 = Add<-512, -1234>;
+
+type SubtractString<A extends string, B extends string> = AddString<
+  A,
+  Inverse<B>
+>;
+
+type Subtract<A extends number, B extends number> = StringToNumber<
+  SubtractString<Stringify<A>, Stringify<B>>
+>;
+
+type SS1 = Subtract<10, -27>;
+type SS2 = Subtract<90, 120>;
+type SS3 = Subtract<123, 77>;
+type SS4 = Subtract<-37, -60>;
+type SS5 = Subtract<-60, -37>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
