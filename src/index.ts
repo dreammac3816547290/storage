@@ -750,311 +750,337 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type ValueStringUnion = "boolean" | "number" | "string" | "reference";
+// type ValueStringUnion = "boolean" | "number" | "string" | "reference";
 
-type Extend<Value, Target, Param> = Value extends Target ? Param : {};
+// type Extend<Value, Target, Param> = Value extends Target ? Param : {};
 
-type ReferenceInput<
-  SchemaObject,
-  ParentTableName extends GetTableNames<SchemaObject>,
-  ParentColumnName extends GetColumnNames<
-    GetTable<SchemaObject, ParentTableName>
-  >,
-  TableName extends GetTableNames<SchemaObject>,
-  ColumnName extends GetColumnNames<GetTable<SchemaObject, TableName>>
-> = {
-  data: {
-    table: TableName;
-    column: ColumnName;
-  };
-};
+// type ReferenceInput<
+//   SchemaObject,
+//   ParentTableName extends GetTableNames<SchemaObject>,
+//   ParentColumnName extends GetColumnNames<
+//     GetTable<SchemaObject, ParentTableName>
+//   >,
+//   TableName extends GetTableNames<SchemaObject>,
+//   ColumnName extends GetColumnNames<GetTable<SchemaObject, TableName>>
+// > = {
+//   data: {
+//     table: TableName;
+//     column: ColumnName;
+//   };
+// };
 
-type ReferenceOutput<
-  SchemaObject,
-  ParentTableName extends GetTableNames<SchemaObject>,
-  ParentColumnName extends GetColumnNames<
-    GetTable<SchemaObject, ParentTableName>
-  >,
-  TableName extends GetTableNames<SchemaObject>,
-  ColumnName extends GetColumnNames<GetTable<SchemaObject, TableName>>
-> = ReferenceInput<
-  SchemaObject,
-  ParentTableName,
-  ParentColumnName,
-  TableName,
-  ColumnName
->;
+// type ReferenceOutput<
+//   SchemaObject,
+//   ParentTableName extends GetTableNames<SchemaObject>,
+//   ParentColumnName extends GetColumnNames<
+//     GetTable<SchemaObject, ParentTableName>
+//   >,
+//   TableName extends GetTableNames<SchemaObject>,
+//   ColumnName extends GetColumnNames<GetTable<SchemaObject, TableName>>
+// > = ReferenceInput<
+//   SchemaObject,
+//   ParentTableName,
+//   ParentColumnName,
+//   TableName,
+//   ColumnName
+// >;
 
-// type GetReferenceTable<R> = R extends ReferenceOutput<
+// // type GetReferenceTable<R> = R extends ReferenceOutput<
+// //   any,
+// //   any,
+// //   any,
+// //   infer TableName,
+// //   any
+// // >
+// //   ? TableName
+// //   : never;
+
+// // type GetReferenceColumn<R> = R extends ReferenceOutput<
+// //   any,
+// //   any,
+// //   any,
+// //   any,
+// //   infer ColumnName
+// // >
+// //   ? ColumnName
+// //   : never;
+
+// type ColumnInput<
+//   SchemaObject,
+//   ParentTableName extends GetTableNames<SchemaObject>,
+//   Name extends string,
+//   ValueString extends ValueStringUnion,
+//   Nullable extends boolean,
+//   Param extends Extend<
+//     ValueString,
+//     "reference",
+//     ReferenceOutput<
+//       SchemaObject,
+//       ParentTableName,
+//       Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//         ? Name
+//         : never,
+//       GetTableNames<SchemaObject>,
+//       GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//     >
+//   >
+// > = {
+//   name: Name;
+//   type: ValueString;
+//   nullable: Nullable;
+// } & Param;
+
+// type ColumnOutput<
+//   SchemaObject,
+//   ParentTableName extends GetTableNames<SchemaObject>,
+//   Name extends string,
+//   ValueString extends ValueStringUnion,
+//   Nullable extends boolean,
+//   Param extends Extend<
+//     ValueString,
+//     "reference",
+//     ReferenceOutput<
+//       SchemaObject,
+//       ParentTableName,
+//       Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//         ? Name
+//         : never,
+//       GetTableNames<SchemaObject>,
+//       GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//     >
+//   >
+// > = ColumnInput<
+//   SchemaObject,
+//   ParentTableName,
+//   Name,
+//   ValueString,
+//   Nullable,
+//   Param
+// >;
+
+// type ColumnOutputUnion = ColumnOutput<
+//   SchemaOutput<any, any>,
+//   string,
+//   string,
+//   ValueStringUnion,
+//   boolean,
+//   any
+// >;
+
+// type GetColumnName<C> = C extends ColumnOutput<
 //   any,
 //   any,
+//   infer Name,
 //   any,
-//   infer TableName,
+//   any,
 //   any
 // >
-//   ? TableName
+//   ? Name
 //   : never;
 
-// type GetReferenceColumn<R> = R extends ReferenceOutput<
+// type TransformColumns<ColumnOutputs> =
+//   ColumnOutputs extends readonly ColumnOutputUnion[]
+//     ? {
+//         [C in ColumnOutputs[number] as GetColumnName<C>]: C;
+//       }
+//     : never;
+
+// export function Column<
+//   SchemaObject,
+//   ParentTableName extends GetTableNames<SchemaObject>,
+//   Name extends string,
+//   ValueString extends ValueStringUnion,
+//   Nullable extends boolean,
+//   Param extends Extend<
+//     ValueString,
+//     "reference",
+//     ReferenceOutput<
+//       SchemaObject,
+//       ParentTableName,
+//       Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//         ? Name
+//         : never,
+//       GetTableNames<SchemaObject>,
+//       GetColumnNames<GetTable<SchemaObject, ParentTableName>>
+//     >
+//   >
+// >(
+//   input: ColumnInput<
+//     SchemaObject,
+//     ParentTableName,
+//     Name,
+//     ValueString,
+//     Nullable,
+//     Param
+//   >
+// ): ColumnOutput<
+//   SchemaObject,
+//   ParentTableName,
+//   Name,
+//   ValueString,
+//   Nullable,
+//   Param
+// > {
+//   return input;
+// }
+
+// type TableInput<SchemaObject, Name extends string, ColumnOutputs> = {
+//   name: Name;
+//   columns: ColumnOutputs;
+// };
+
+// type TableOutput<
+//   SchemaObject,
+//   Name extends string,
+//   ColumnOutputs,
+//   TransformColumnsOutput extends TransformColumns<ColumnOutputs>
+// > = {
+//   name: Name;
+//   columns: TransformColumnsOutput;
+// };
+
+// type TableOutputUnion = TableOutput<any, string, any, any>;
+
+// type GetTableName<T> = T extends TableOutput<any, infer Name, any, any>
+//   ? Name
+//   : never;
+
+// type GetColumnNames<T> = T extends TableOutput<any, any, any, any>
+//   ? keyof T["columns"]
+//   : never;
+
+// type GetColumn<T, ColumnName> = T extends TableOutput<
 //   any,
 //   any,
 //   any,
-//   any,
-//   infer ColumnName
+//   infer TransformColumnsOutput
 // >
-//   ? ColumnName
+//   ? ColumnName extends keyof TransformColumnsOutput
+//     ? T["columns"][ColumnName]
+//     : never
 //   : never;
 
-type ColumnInput<
-  SchemaObject,
-  ParentTableName extends GetTableNames<SchemaObject>,
-  Name extends string,
-  ValueString extends ValueStringUnion,
-  Nullable extends boolean,
-  Param extends Extend<
-    ValueString,
-    "reference",
-    ReferenceOutput<
-      SchemaObject,
-      ParentTableName,
-      Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-        ? Name
-        : never,
-      GetTableNames<SchemaObject>,
-      GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-    >
-  >
-> = {
-  name: Name;
-  type: ValueString;
-  nullable: Nullable;
-} & Param;
+// type TransformTables<TableOutputs> =
+//   TableOutputs extends readonly TableOutputUnion[]
+//     ? {
+//         [T in TableOutputs[number] as GetTableName<T>]: T;
+//       }
+//     : never;
 
-type ColumnOutput<
-  SchemaObject,
-  ParentTableName extends GetTableNames<SchemaObject>,
-  Name extends string,
-  ValueString extends ValueStringUnion,
-  Nullable extends boolean,
-  Param extends Extend<
-    ValueString,
-    "reference",
-    ReferenceOutput<
-      SchemaObject,
-      ParentTableName,
-      Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-        ? Name
-        : never,
-      GetTableNames<SchemaObject>,
-      GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-    >
-  >
-> = ColumnInput<
-  SchemaObject,
-  ParentTableName,
-  Name,
-  ValueString,
-  Nullable,
-  Param
->;
+// export function Table<
+//   SchemaObject,
+//   Name extends string,
+//   ColumnOutputs,
+//   TransformColumnsOutput extends TransformColumns<ColumnOutputs>
+// >({
+//   name,
+//   columns,
+// }: TableInput<SchemaObject, Name, ColumnOutputs>): TableOutput<
+//   SchemaObject,
+//   Name,
+//   ColumnOutputs,
+//   TransformColumnsOutput
+// > {
+//   if (!Array.isArray(columns)) throw new Error("table creation error");
+//   return {
+//     name,
+//     columns: Object.fromEntries(columns.map((column) => [column.name, column])),
+//   };
+// }
 
-type ColumnOutputUnion = ColumnOutput<
-  SchemaOutput<any, any>,
-  string,
-  string,
-  ValueStringUnion,
-  boolean,
-  any
->;
+// type SchemaInput<TableOutputs, TransformTablesOutput> = {
+//   tables: TableOutputs extends TableOutput<
+//     TransformTablesOutput,
+//     infer A,
+//     infer B,
+//     infer C
+//   >[]
+//     ? TableOutputs
+//     : never;
+// };
 
-type GetColumnName<C> = C extends ColumnOutput<
-  any,
-  any,
-  infer Name,
-  any,
-  any,
-  any
->
-  ? Name
-  : never;
+// type SchemaOutput<
+//   TableOutputs,
+//   TransformTablesOutput extends TransformTables<TableOutputs>
+// > = {
+//   tables: TransformTablesOutput;
+// };
 
-type TransformColumns<ColumnOutputs> =
-  ColumnOutputs extends readonly ColumnOutputUnion[]
-    ? {
-        [C in ColumnOutputs[number] as GetColumnName<C>]: C;
-      }
-    : never;
+// type GetTableNames<S> = S extends SchemaOutput<any, any>
+//   ? keyof S["tables"]
+//   : never;
 
-export function Column<
-  SchemaObject,
-  ParentTableName extends GetTableNames<SchemaObject>,
-  Name extends string,
-  ValueString extends ValueStringUnion,
-  Nullable extends boolean,
-  Param extends Extend<
-    ValueString,
-    "reference",
-    ReferenceOutput<
-      SchemaObject,
-      ParentTableName,
-      Name extends GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-        ? Name
-        : never,
-      GetTableNames<SchemaObject>,
-      GetColumnNames<GetTable<SchemaObject, ParentTableName>>
-    >
-  >
->(
-  input: ColumnInput<
-    SchemaObject,
-    ParentTableName,
-    Name,
-    ValueString,
-    Nullable,
-    Param
-  >
-): ColumnOutput<
-  SchemaObject,
-  ParentTableName,
-  Name,
-  ValueString,
-  Nullable,
-  Param
-> {
-  return input;
-}
+// type GetTable<S, TableName> = S extends SchemaOutput<
+//   any,
+//   infer TransformTablesOutput
+// >
+//   ? TableName extends keyof TransformTablesOutput
+//     ? S["tables"][TableName]
+//     : never
+//   : never;
 
-type TableInput<SchemaObject, Name extends string, ColumnOutputs> = {
-  name: Name;
-  columns: ColumnOutputs;
-};
+// export function Schema<
+//   TableOutputs,
+//   TransformTablesOutput extends TransformTables<TableOutputs>
+// >({
+//   tables,
+// }: SchemaInput<TableOutputs, TransformTablesOutput>): SchemaOutput<
+//   TableOutputs,
+//   TransformTablesOutput
+// > {
+//   if (!Array.isArray(tables)) throw new Error("schema creation error");
+//   return {
+//     tables: Object.fromEntries(tables.map((table) => [table.name, table])),
+//   };
+// }
 
-type TableOutput<
-  SchemaObject,
-  Name extends string,
-  ColumnOutputs,
-  TransformColumnsOutput extends TransformColumns<ColumnOutputs>
-> = {
-  name: Name;
-  columns: TransformColumnsOutput;
-};
+// const schema = Schema({
+//   tables: [
+//     Table({
+//       name: "product",
+//       columns: [
+//         Column({ name: "id", type: "number", nullable: false }),
+//         Column({ name: "name", type: "string", nullable: false }),
+//         Column({ name: "price", type: "number", nullable: false }),
+//       ] as const,
+//     }),
+//     Table({
+//       name: "order",
+//       columns: [
+//         Column({ name: "id", type: "number", nullable: false }),
+//         // Column({
+//         //   name: "product_id",
+//         //   type: "reference",
+//         //   data: Reference({ table: "product", column: "id" }),
+//         // }),
+//         Column({ name: "quantity", type: "number", nullable: false }),
+//       ] as const,
+//     }),
+//   ] as const,
+// });
 
-type TableOutputUnion = TableOutput<any, string, any, any>;
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type GetTableName<T> = T extends TableOutput<any, infer Name, any, any>
-  ? Name
-  : never;
+type ColumnTypeStringUnion = "boolean" | "number" | "string" | "reference";
 
-type GetColumnNames<T> = T extends TableOutput<any, any, any, any>
-  ? keyof T["columns"]
-  : never;
-
-type GetColumn<T, ColumnName> = T extends TableOutput<
-  any,
-  any,
-  any,
-  infer TransformColumnsOutput
->
-  ? ColumnName extends keyof TransformColumnsOutput
-    ? T["columns"][ColumnName]
-    : never
-  : never;
-
-type TransformTables<TableOutputs> =
-  TableOutputs extends readonly TableOutputUnion[]
-    ? {
-        [T in TableOutputs[number] as GetTableName<T>]: T;
-      }
-    : never;
-
-export function Table<
-  SchemaObject,
-  Name extends string,
-  ColumnOutputs,
-  TransformColumnsOutput extends TransformColumns<ColumnOutputs>
->({
-  name,
-  columns,
-}: TableInput<SchemaObject, Name, ColumnOutputs>): TableOutput<
-  SchemaObject,
-  Name,
-  ColumnOutputs,
-  TransformColumnsOutput
-> {
-  if (!Array.isArray(columns)) throw new Error("table creation error");
-  return {
-    name,
-    columns: Object.fromEntries(columns.map((column) => [column.name, column])),
-  };
-}
-
-type SchemaInput<TableOutputs, TransformTablesOutput> = {
-  tables: TableOutputs extends TableOutput<
-    TransformTablesOutput,
-    infer A,
-    infer B,
-    infer C
-  >[]
-    ? TableOutputs
-    : never;
-};
-
-type SchemaOutput<
-  TableOutputs,
-  TransformTablesOutput extends TransformTables<TableOutputs>
-> = {
-  tables: TransformTablesOutput;
-};
-
-type GetTableNames<S> = S extends SchemaOutput<any, any>
-  ? keyof S["tables"]
-  : never;
-
-type GetTable<S, TableName> = S extends SchemaOutput<
-  any,
-  infer TransformTablesOutput
->
-  ? TableName extends keyof TransformTablesOutput
-    ? S["tables"][TableName]
-    : never
-  : never;
-
-export function Schema<
-  TableOutputs,
-  TransformTablesOutput extends TransformTables<TableOutputs>
->({
-  tables,
-}: SchemaInput<TableOutputs, TransformTablesOutput>): SchemaOutput<
-  TableOutputs,
-  TransformTablesOutput
-> {
-  if (!Array.isArray(tables)) throw new Error("schema creation error");
-  return {
-    tables: Object.fromEntries(tables.map((table) => [table.name, table])),
-  };
-}
-
-const schema = Schema({
-  tables: [
-    Table({
-      name: "product",
-      columns: [
-        Column({ name: "id", type: "number", nullable: false }),
-        Column({ name: "name", type: "string", nullable: false }),
-        Column({ name: "price", type: "number", nullable: false }),
-      ] as const,
-    }),
-    Table({
-      name: "order",
-      columns: [
-        Column({ name: "id", type: "number", nullable: false }),
-        // Column({
-        //   name: "product_id",
-        //   type: "reference",
-        //   data: Reference({ table: "product", column: "id" }),
-        // }),
-        Column({ name: "quantity", type: "number", nullable: false }),
-      ] as const,
-    }),
-  ] as const,
-});
+type Intersect<A, B> = A extends object
+  ? A extends readonly any[]
+    ? A extends readonly []
+      ? []
+      : B extends readonly []
+      ? []
+      : A extends readonly [infer HeadA, ...infer RestA]
+      ? B extends readonly [infer HeadB, ...infer RestB]
+        ? [Intersect<HeadA, HeadB>, ...Intersect<RestA, RestB>] // array
+        : never
+      : never
+    : {
+        [K in keyof A | keyof B]: K extends keyof A
+          ? K extends keyof B
+            ? Intersect<A[K], B[K]>
+            : A[K]
+          : K extends keyof B
+          ? B[K]
+          : never;
+      } // object
+  : A & B; // primitive

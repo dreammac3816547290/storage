@@ -8,177 +8,277 @@
 // function A<Names extends Fix<Names>>(input: Names) // immediate check
 // separate structure { type: "number" | "reference", data?: any } and constraint { type: "number", data: {} } | { type: "reference", data: {...} }
 // function type to create transform argument that maps generic types ? e.g. MapArray<Arr, TransformFunc>
+// object vs Object
+// partially known generic type <A, B, unknown> extends <infer A, infer B, any>
 
-type Values = "number" | "reference";
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type ColumnInput<
-  Names extends string,
-  Name extends Names,
-  Value extends Values
-> = Value extends "number"
-  ? {
-      name: Name;
-      type: "number";
-    }
-  : {
-      name: Name;
-      type: "reference";
-      data: { column: Exclude<Names, Name> };
-    };
+type ColumnTypeStringUnion = "number" | "reference";
 
-type FixColumnInput<Input> = (Input extends _name<infer Name>
-  ? _name<Name> // not Input, because only a single property is being asserted
-  : _name<string>) &
-  (Input extends _type<infer Value> ? _type<Value> : _type<Values>) &
-  (Input extends _type<"reference">
-    ? Input extends _data<infer Param>
-      ? _data<Param>
-      : _data<Object>
-    : Input extends _data<infer Param>
-    ? _data<never>
-    : {}); // {} or _data<never>
+type Intersect<A, B> = A extends object
+  ? A extends readonly any[]
+    ? A extends readonly []
+      ? []
+      : B extends readonly []
+      ? []
+      : A extends readonly [infer HeadA, ...infer RestA]
+      ? B extends readonly [infer HeadB, ...infer RestB]
+        ? [Intersect<HeadA, HeadB>, ...Intersect<RestA, RestB>] // array
+        : never
+      : never
+    : {
+        [K in keyof A | keyof B]: K extends keyof A
+          ? K extends keyof B
+            ? Intersect<A[K], B[K]>
+            : A[K]
+          : K extends keyof B
+          ? B[K]
+          : never;
+      } // object
+  : A & B; // primitive
 
-type FixColumnsInput<Input> = Input extends readonly any[]
-  ? {
-      [Key in keyof Input]: Key extends Stringify<infer Index>
-        ? FixColumnInput<Input[Key]>
-        : Input[Key];
-    }
-  : [];
-
-// type Fix<A> = A;
-// type Test<A extends Fix<A>> = A; // not allowed
-
-function series<Input>(input: Intersect<Input, FixColumnsInput<Input>>) {}
-
-// function series<Input>(input: Input & FixColumnsInput<Input>) {}
-
-type Intersect<A, B> = A extends readonly []
-  ? []
-  : B extends readonly []
-  ? []
-  : A extends readonly [infer FirstA, ...infer RestA]
-  ? B extends readonly [infer FirstB, ...infer RestB]
-    ? // A extends readonly any[]
-      // ? B extends readonly any[]
-      //   ? A["length"] extends B["length"]
-      //     ? {
-      //         // array
-      //         [K in keyof A | keyof B]: K extends Stringify<infer Index>
-      //           ? K extends keyof A
-      //             ? K extends keyof B
-      //               ? A[K] & B[K]
-      //               : A[K]
-      //             : K extends keyof B
-      //             ? B[K]
-      //             : never
-      //           : K extends keyof A
-      //           ? A[K]
-      //           : K extends keyof B
-      //           ? B[K]
-      //           : never;
-      //       }
-      //     : never
-      //   : never
-      [Intersect<FirstA, FirstB>, ...Intersect<RestA, RestB>]
-    : never
-  : {
-      // object
-      [K in keyof A | keyof B]: K extends keyof A
-        ? K extends keyof B
-          ? A[K] & B[K]
-          : A[K]
-        : K extends keyof B
-        ? B[K]
-        : never;
-    };
-
-type FCI_1 = {
-  name: "reference";
-  type: "reference";
-  data: undefined;
-} & FixColumnInput<{
-  name: "reference";
-  type: "reference";
-  data: undefined;
-}>; // evaluates to never instead of intersection
-
-type FCI_2 = Intersect<
-  {
-    name: "reference";
-    type: "reference";
-    data: undefined;
-  },
-  FixColumnInput<{
-    name: "reference";
-    type: "reference";
-    data: undefined;
-  }>
->;
-
-type FCI_3 = Intersect<
-  [
-    { name: "id"; type: "number" },
-    { name: "reference"; type: "reference"; data: undefined }
-  ],
-  FixColumnsInput<
-    [
-      { name: "id"; type: "number" },
-      { name: "reference"; type: "reference"; data: undefined }
-    ]
-  >
->;
-
-const fci_1: FCI = { name: "reference", type: "reference", data: undefined };
-
-const fci_2 = series([
-  { name: "id", type: "number" },
-  { name: "reference", type: "reference", data: {} },
-] as const);
-
-// const columns = [
-//   { name: "id", type: "number" },
-//   { name: "reference", type: "reference", data: undefined },
-// ] as const;
-
-// type X = typeof columns extends any[] ? true : false;
-// type Y = readonly any[] extends any[] ? true : false; // false
-// type Z = any[] extends readonly any[] ? true : false; // true
-
-// const fci_3 = series(columns);
-
-type fci_4 = [number, string] & [boolean, Object];
-
-type _name<Name extends string> = {
+type ColumnName<Name extends string> = {
   name: Name;
 };
 
-type _type<Value extends Values> = {
-  type: Value;
+type ColumnType<TypeString extends ColumnTypeStringUnion> = {
+  type: TypeString;
 };
 
-type _data<Param extends Object> = {
-  data: Param;
+type ColumnData<Data extends object> = {
+  data: Data;
 };
 
-type ZZZ = {
-  name: "reference";
-  type: "reference";
-  data: { column: "id" };
-} extends _name<infer Name> & _type<infer Value> & _data<infer Param>
-  ? Name
+type ReferenceColumn<ColumnName extends string> = {
+  column: ColumnName;
+};
+
+type GetColumnName<Input> = Input extends ColumnName<infer Name> ? Name : never;
+
+type GetColumnNames<Input> = Input extends readonly any[]
+  ? GetColumnName<Input[number]>
   : never;
 
-type Infer<Output> = Output extends any[] ? Output[0] : never;
-type Transform<Output> = { output: Output };
+type FixColumn<Input, ColumnNames extends string> = (Input extends ColumnName<
+  infer Name
+>
+  ? ColumnName<Name>
+  : ColumnName<string>) &
+  (Input extends ColumnType<infer TypeString>
+    ? ColumnType<TypeString>
+    : ColumnType<ColumnTypeStringUnion>) &
+  (Input extends ColumnType<"number">
+    ? Input extends ColumnData<infer Data> // number
+      ? ColumnData<never>
+      : {}
+    : Input extends ColumnData<infer Data> // reference
+    ? Data extends ReferenceColumn<infer ColumnName> // has data
+      ? ColumnName extends ColumnNames
+        ? ColumnData<ReferenceColumn<ColumnName>>
+        : ColumnData<ReferenceColumn<ColumnNames>>
+      : ColumnData<ReferenceColumn<ColumnNames>>
+    : ColumnData<ReferenceColumn<ColumnNames>>); // no data
 
-function func<Input extends Infer<Output>, Output>(
-  input: Input
-): Transform<Output> {
-  return { output: [] as any };
-}
+type FixColumns<Input, ColumnNames extends string> = Input extends readonly []
+  ? []
+  : Input extends [infer Head, ...infer Rest]
+  ? [FixColumn<Head, ColumnNames>, ...FixColumns<Rest, ColumnNames>]
+  : [];
 
-const output: Transform<[1234]> = func(123);
+function Table<Input>(
+  input: Intersect<Input, FixColumns<Input, GetColumnNames<Input>>>
+) {}
+
+const table = Table([
+  { name: "id", type: "number" },
+  { name: "reference", type: "reference", data: { column: "id" } },
+] as const);
+
+// type FInput<Name, Type> = Type extends "number" ? number : never;
+// type FOutput<Name, Type> = { name: Name; type: Type };
+
+// function func<Input extends FInput<Name, Type>, Name, Type>(
+//   input: Input
+// ): FOutput<Name, Type> {
+//   return {} as any;
+// }
+
+// const output: FOutput<"id", "number"> = func("123"); // propagate type from output to input
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type Values = "number" | "reference";
+
+// // type ColumnInput<
+// //   Names extends string,
+// //   Name extends Names,
+// //   Value extends Values
+// // > = Value extends "number"
+// //   ? {
+// //       name: Name;
+// //       type: "number";
+// //     }
+// //   : {
+// //       name: Name;
+// //       type: "reference";
+// //       data: { column: Exclude<Names, Name> };
+// //     };
+
+// type FixColumnInput<Input> = (Input extends _name<infer Name>
+//   ? _name<Name> // not Input, because only a single property is being asserted
+//   : _name<string>) &
+//   (Input extends _type<infer Value> ? _type<Value> : _type<Values>) &
+//   (Input extends _type<"reference">
+//     ? Input extends _data<infer Param>
+//       ? _data<Param>
+//       : _data<Object>
+//     : Input extends _data<infer Param>
+//     ? _data<never>
+//     : {}); // {} or _data<never>
+
+// type FixColumnsInput<Input> = Input extends readonly any[]
+//   ? {
+//       [Key in keyof Input]: Key extends Stringify<infer Index>
+//         ? FixColumnInput<Input[Key]>
+//         : Input[Key];
+//     }
+//   : [];
+
+// // type Fix<A> = A;
+// // type Test<A extends Fix<A>> = A; // not allowed
+
+// function series<Input>(input: Intersect<Input, FixColumnsInput<Input>>) {}
+
+// // function series<Input>(input: Input & FixColumnsInput<Input>) {}
+
+// type Intersect<A, B> = A extends readonly []
+//   ? []
+//   : B extends readonly []
+//   ? []
+//   : A extends readonly [infer FirstA, ...infer RestA]
+//   ? B extends readonly [infer FirstB, ...infer RestB]
+//     ? // A extends readonly any[]
+//       // ? B extends readonly any[]
+//       //   ? A["length"] extends B["length"]
+//       //     ? {
+//       //         // array
+//       //         [K in keyof A | keyof B]: K extends Stringify<infer Index>
+//       //           ? K extends keyof A
+//       //             ? K extends keyof B
+//       //               ? A[K] & B[K]
+//       //               : A[K]
+//       //             : K extends keyof B
+//       //             ? B[K]
+//       //             : never
+//       //           : K extends keyof A
+//       //           ? A[K]
+//       //           : K extends keyof B
+//       //           ? B[K]
+//       //           : never;
+//       //       }
+//       //     : never
+//       //   : never
+//       [Intersect<FirstA, FirstB>, ...Intersect<RestA, RestB>]
+//     : never
+//   : {
+//       // object
+//       [K in keyof A | keyof B]: K extends keyof A
+//         ? K extends keyof B
+//           ? A[K] & B[K] // use Intersect, separate primitives
+//           : A[K]
+//         : K extends keyof B
+//         ? B[K]
+//         : never;
+//     };
+
+// type FCI = Intersect<
+//   {
+//     name: "reference";
+//     type: "reference";
+//     data: undefined;
+//   },
+//   FixColumnInput<{
+//     name: "reference";
+//     type: "reference";
+//     data: undefined;
+//   }>
+// >;
+
+// // type FCI_1 = {
+// //   name: "reference";
+// //   type: "reference";
+// //   data: undefined;
+// // } & FixColumnInput<{
+// //   name: "reference";
+// //   type: "reference";
+// //   data: undefined;
+// // }>; // evaluates to never instead of intersection
+
+// // type FCI_2 = Intersect<
+// //   {
+// //     name: "reference";
+// //     type: "reference";
+// //     data: undefined;
+// //   },
+// //   FixColumnInput<{
+// //     name: "reference";
+// //     type: "reference";
+// //     data: undefined;
+// //   }>
+// // >;
+
+// // type FCI_3 = Intersect<
+// //   [
+// //     { name: "id"; type: "number" },
+// //     { name: "reference"; type: "reference"; data: undefined }
+// //   ],
+// //   FixColumnsInput<
+// //     [
+// //       { name: "id"; type: "number" },
+// //       { name: "reference"; type: "reference"; data: undefined }
+// //     ]
+// //   >
+// // >;
+
+// // const fci_1: FCI = { name: "reference", type: "reference", data: undefined };
+
+// // const fci_2 = series([
+// //   { name: "id", type: "number" },
+// //   { name: "reference", type: "reference", data: {} },
+// // ] as const);
+
+// // const columns = [
+// //   { name: "id", type: "number" },
+// //   { name: "reference", type: "reference", data: undefined },
+// // ] as const;
+
+// // type X = typeof columns extends any[] ? true : false;
+// // type Y = readonly any[] extends any[] ? true : false; // false
+// // type Z = any[] extends readonly any[] ? true : false; // true
+
+// // const fci_3 = series(columns);
+
+// // type fci_4 = [number, string] & [boolean, Object];
+
+// type _name<Name extends string> = {
+//   name: Name;
+// };
+
+// type _type<Value extends Values> = {
+//   type: Value;
+// };
+
+// type _data<Param extends Object> = {
+//   data: Param;
+// };
+
+// type ZZZ = {
+//   name: "reference";
+//   type: "reference";
+//   data: { column: "id" };
+// } extends _name<infer Name> & _type<infer Value> & _data<infer Param>
+//   ? Name
+//   : never;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
