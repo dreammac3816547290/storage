@@ -1,3 +1,282 @@
+// circular extends: A extends C<B>, B extends D<A> // fail
+// A extends B<A> // fail in generic declaration, success in conditional type
+// Transform<Result> extends infer Names
+// Circular
+// multilayer infer: infer { name: ... } get column names, infer type, infer param => Column<"id" | "reference", "id", never> if param does not match
+// extends _Name<infer Name> & _Type<infer Type> & _Param<infer Param>
+// Fix<T> type to map to the correct one according to constraint
+// function A<Names extends Fix<Names>>(input: Names) // immediate check
+// separate structure { type: "number" | "reference", data?: any } and constraint { type: "number", data: {} } | { type: "reference", data: {...} }
+// function type to create transform argument that maps generic types ? e.g. MapArray<Arr, TransformFunc>
+
+type Values = "number" | "reference";
+
+type ColumnInput<
+  Names extends string,
+  Name extends Names,
+  Value extends Values
+> = Value extends "number"
+  ? {
+      name: Name;
+      type: "number";
+    }
+  : {
+      name: Name;
+      type: "reference";
+      data: { column: Exclude<Names, Name> };
+    };
+
+type FixColumnInput<Input> = (Input extends _name<infer Name>
+  ? _name<Name> // not Input, because only a single property is being asserted
+  : _name<string>) &
+  (Input extends _type<infer Value> ? _type<Value> : _type<Values>) &
+  (Input extends _type<"reference">
+    ? Input extends _data<infer Param>
+      ? _data<Param>
+      : _data<Object>
+    : Input extends _data<infer Param>
+    ? _data<never>
+    : {}); // {} or _data<never>
+
+type FixColumnsInput<Input> = Input extends readonly any[]
+  ? {
+      [Key in keyof Input]: Key extends Stringify<infer Index>
+        ? FixColumnInput<Input[Key]>
+        : Input[Key];
+    }
+  : [];
+
+// type Fix<A> = A;
+// type Test<A extends Fix<A>> = A; // not allowed
+
+function series<Input>(input: Intersect<Input, FixColumnsInput<Input>>) {}
+
+// function series<Input>(input: Input & FixColumnsInput<Input>) {}
+
+type Intersect<A, B> = A extends readonly []
+  ? []
+  : B extends readonly []
+  ? []
+  : A extends readonly [infer FirstA, ...infer RestA]
+  ? B extends readonly [infer FirstB, ...infer RestB]
+    ? // A extends readonly any[]
+      // ? B extends readonly any[]
+      //   ? A["length"] extends B["length"]
+      //     ? {
+      //         // array
+      //         [K in keyof A | keyof B]: K extends Stringify<infer Index>
+      //           ? K extends keyof A
+      //             ? K extends keyof B
+      //               ? A[K] & B[K]
+      //               : A[K]
+      //             : K extends keyof B
+      //             ? B[K]
+      //             : never
+      //           : K extends keyof A
+      //           ? A[K]
+      //           : K extends keyof B
+      //           ? B[K]
+      //           : never;
+      //       }
+      //     : never
+      //   : never
+      [Intersect<FirstA, FirstB>, ...Intersect<RestA, RestB>]
+    : never
+  : {
+      // object
+      [K in keyof A | keyof B]: K extends keyof A
+        ? K extends keyof B
+          ? A[K] & B[K]
+          : A[K]
+        : K extends keyof B
+        ? B[K]
+        : never;
+    };
+
+type FCI_1 = {
+  name: "reference";
+  type: "reference";
+  data: undefined;
+} & FixColumnInput<{
+  name: "reference";
+  type: "reference";
+  data: undefined;
+}>; // evaluates to never instead of intersection
+
+type FCI_2 = Intersect<
+  {
+    name: "reference";
+    type: "reference";
+    data: undefined;
+  },
+  FixColumnInput<{
+    name: "reference";
+    type: "reference";
+    data: undefined;
+  }>
+>;
+
+type FCI_3 = Intersect<
+  [
+    { name: "id"; type: "number" },
+    { name: "reference"; type: "reference"; data: undefined }
+  ],
+  FixColumnsInput<
+    [
+      { name: "id"; type: "number" },
+      { name: "reference"; type: "reference"; data: undefined }
+    ]
+  >
+>;
+
+const fci_1: FCI = { name: "reference", type: "reference", data: undefined };
+
+const fci_2 = series([
+  { name: "id", type: "number" },
+  { name: "reference", type: "reference", data: {} },
+] as const);
+
+// const columns = [
+//   { name: "id", type: "number" },
+//   { name: "reference", type: "reference", data: undefined },
+// ] as const;
+
+// type X = typeof columns extends any[] ? true : false;
+// type Y = readonly any[] extends any[] ? true : false; // false
+// type Z = any[] extends readonly any[] ? true : false; // true
+
+// const fci_3 = series(columns);
+
+type fci_4 = [number, string] & [boolean, Object];
+
+type _name<Name extends string> = {
+  name: Name;
+};
+
+type _type<Value extends Values> = {
+  type: Value;
+};
+
+type _data<Param extends Object> = {
+  data: Param;
+};
+
+type ZZZ = {
+  name: "reference";
+  type: "reference";
+  data: { column: "id" };
+} extends _name<infer Name> & _type<infer Value> & _data<infer Param>
+  ? Name
+  : never;
+
+type Infer<Output> = Output extends any[] ? Output[0] : never;
+type Transform<Output> = { output: Output };
+
+function func<Input extends Infer<Output>, Output>(
+  input: Input
+): Transform<Output> {
+  return { output: [] as any };
+}
+
+const output: Transform<[1234]> = func(123);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type Values = "number" | "reference";
+
+// type Column<
+//   Names extends string,
+//   Name extends Names,
+//   Value extends Values
+// > = Value extends "number"
+//   ? {
+//       name: Name;
+//       type: "number";
+//     }
+//   : {
+//       name: Name;
+//       type: "reference";
+//       data: { column: Exclude<Names, Name> };
+//     };
+
+// function series<Names extends string, Input>(
+//   input: // Column<Names, Names, Values>[]
+//   Input extends {
+//     [K in keyof Input]: K extends Stringify<infer Index>
+//       ? Input[K] extends Column<Names, infer Name, infer Value>
+//         ? Input[K]
+//         : never
+//       : Input[K];
+//   }
+//     ? Input
+//     : never
+// ) {}
+
+// const a = series([
+//   { name: "id", type: "number" },
+//   { name: "reference", type: "reference", data: { column: "id" } }, // fail
+// ] as const);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// type Values = "number" | "reference";
+
+// type Column<Names, Name, Value> = Name extends string
+//   ? Value extends Values
+//     ? Names extends readonly any[]
+//       ? {
+//           name: Name;
+//           type: Value;
+//           data: Value extends "number"
+//             ? {}
+//             : { column: Exclude<Names[number], Name> };
+//         }
+//       : never
+//     : never
+//   : never;
+
+// type Transform<Result> = {
+//   [K in keyof Result]: K extends Stringify<infer Index> // keyof creates string types, not number
+//     ? Result[K] extends Column<any, infer Name, infer Value>
+//       ? Name
+//       : never
+//     : Result[K];
+// };
+
+// type Inject<Names, Result> = {
+//   [K in keyof Result]: K extends Stringify<infer Index>
+//     ? Result[K] extends Column<any, infer Name, infer Value>
+//       ? Column<Names, Name, Value>
+//       : never
+//     : Result[K];
+// };
+
+// // type Series<Names, Result> = Names extends Transform<Result> ? Result : never; // delayed check for Names
+
+// // function series<Names, Result>(input: Series<Names, Result>) {}
+
+// type Series<Names extends Transform<Result>, Result> = Result extends Inject<
+//   Names,
+//   Result
+// >
+//   ? Result
+//   : never; // immediate check for Names
+
+// // type Shadow<Names, Result extends Inject<Names, Result>> = Result;
+
+// // type Series<Names extends Transform<Result>, Result> = Shadow<Names, Result>; // immediate check for Names
+
+// function series<Names extends Transform<Result>, Result>(
+//   input: Series<Names, Result>
+// ) {}
+
+// const a = series([
+//   { name: "id", type: "number", data: {} },
+//   { name: "reference", type: "reference", data: { column: "id" } },
+// ] as const);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type And<A extends boolean, B extends boolean> = A extends true
   ? B extends true
     ? true
@@ -776,7 +1055,7 @@ type MF10 = MultiplyFloat<120, 0.000135>;
 
 // type A = 37 extends infer A ? A : never; // not widened to number
 
-// function check<S>(text: S extends "a" ? S : never) {}
+// function check<S extends string>(text: S extends Reverse<S> ? S : never) {}
 
 // const a = check("ab");
 
