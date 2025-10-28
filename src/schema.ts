@@ -1,4 +1,10 @@
-import type { Intersect, IntersectWarnings, Warning } from "./util.js";
+import type {
+  ArrayWarning,
+  FixWarning,
+  Intersect,
+  IntersectWarnings,
+  Warning,
+} from "./util.js";
 
 export type ColumnTypeStringUnion =
   | "boolean"
@@ -60,18 +66,32 @@ export type ColumnOutput<Input> = IntersectWarnings<
 export function Column<Input>(
   input: Intersect<Input, FixColumnInput<Input>>
 ): ColumnOutput<Input> {
-  return input as any;
+  return { nullable: false, ...input } as any;
 }
 
 export type TableName<Name extends string> = _Name<Name>;
 
 export type TableColumns<Columns extends readonly any[]> = _Columns<Columns>; // check
 
-export type FixTableInput<Input> = Input extends _Columns<infer C>
-  ? never
-  : never; // check
+export type FixTableInput<Input> = (Input extends TableName<infer Name>
+  ? TableName<Name>
+  : TableName<string>) &
+  (Input extends TableColumns<infer Columns>
+    ? FixWarning<Columns>
+    : TableColumns<[]>);
 
-export type TableOutput<Input> = {}; // check input warning
+export type TableOutput<Input> = IntersectWarnings<
+  [
+    Input extends TableName<infer Name>
+      ? TableName<Name>
+      : Warning<_Name<"string">>,
+    Input extends TableColumns<infer Columns>
+      ? ArrayWarning<Columns> extends Warning<infer Message>
+        ? Warning<_Columns<Message>>
+        : TableColumns<Columns>
+      : Warning<_Columns<"array">>
+  ]
+>;
 
 export function Table<Input>(
   input: Intersect<Input, FixTableInput<Input>>
@@ -90,3 +110,12 @@ export function Schema<Input>(
 }
 
 const column = Column({ name: "id", type: "number" } as const);
+
+const table = Table({
+  name: "product",
+  columns: [
+    Column({ name: "id", type: "number" } as const),
+    Column({ name: "name", type: "string" } as const),
+    Column({ name: "price", type: "number" } as const),
+  ] as const,
+} as const);
